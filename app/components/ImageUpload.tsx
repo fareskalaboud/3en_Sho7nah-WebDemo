@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback, ChangeEvent, DragEvent } from 'react'
 import {
   Box,
   Paper,
@@ -22,22 +22,15 @@ import {
 import {
   CloudUpload,
   CheckCircle,
-  Error,
+  Error as ErrorIcon,
   PhotoCamera,
   Delete,
   Language,
 } from '@mui/icons-material'
 
-interface UploadResult {
-  canShip: boolean
-  message: string
-}
+import { UploadResult, ImageUploadProps, ApiErrorResponse, ApiSuccessResponse } from '../../types'
 
-interface ImageUploadProps {
-  onResult?: (result: UploadResult) => void
-}
-
-const ImageUpload: React.FC<ImageUploadProps> = ({ onResult }) => {
+const ImageUpload = ({ onResult }: ImageUploadProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -89,7 +82,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onResult }) => {
     setPreviewUrl(url)
   }, [])
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       handleFileSelect(file)
@@ -104,17 +97,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onResult }) => {
     }
   }
 
-  const handleDragOver = (event: React.DragEvent) => {
+  const handleDragOver = (event: DragEvent) => {
     event.preventDefault()
     setDragOver(true)
   }
 
-  const handleDragLeave = (event: React.DragEvent) => {
+  const handleDragLeave = (event: DragEvent) => {
     event.preventDefault()
     setDragOver(false)
   }
 
-  const handleDrop = (event: React.DragEvent) => {
+  const handleDrop = (event: DragEvent) => {
     event.preventDefault()
     setDragOver(false)
     
@@ -141,13 +134,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onResult }) => {
         body: formData,
       })
 
-      const data = await response.json()
+      const data: ApiSuccessResponse | ApiErrorResponse = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error as string || 'Failed to analyze image')
+        const errorData = data as ApiErrorResponse
+        const errorMessage = errorData.error || 'Failed to analyze image'
+        throw new Error(errorMessage)
       }
 
-      const uploadResult = data.result
+      const successData = data as ApiSuccessResponse
+      const uploadResult = successData.result
       setResult(uploadResult)
       onResult?.(uploadResult)
 
@@ -175,7 +171,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onResult }) => {
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Language sx={{ mr: 1, color: theme.palette.primary.main }} />
         <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel id="language-select-label">Response Language</InputLabel>
+          <InputLabel htmlFor="language-select">Response Language</InputLabel>
           <Select
             labelId="language-select-label"
             id="language-select"
@@ -326,7 +322,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onResult }) => {
               {result.canShip ? (
                 <CheckCircle sx={{ color: 'success.main', mr: 1 }} />
               ) : (
-                <Error sx={{ color: 'error.main', mr: 1 }} />
+                <ErrorIcon sx={{ color: 'error.main', mr: 1 }} />
               )}
               <Chip
                 label={result.canShip ? 'Can Ship' : 'Cannot Ship'}

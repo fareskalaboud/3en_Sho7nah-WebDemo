@@ -144,7 +144,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onResult }) => {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to analyze image')
+        throw new Error(data.error as string || 'Failed to analyze image')
       }
 
       const uploadResult = data.result
